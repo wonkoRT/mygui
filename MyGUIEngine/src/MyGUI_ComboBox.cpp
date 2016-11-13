@@ -439,6 +439,8 @@ namespace MyGUI
 
 	void ComboBox::setPropertyOverride(const std::string& _key, const std::string& _value)
 	{
+		static std::string AddItemData; // hack
+
 		/// @wproperty{ComboBox, ModeDrop, bool} Режим выпадающего списка, в этом режиме значение в поля поменять нельзя.
 		if (_key == "ModeDrop")
 			setComboModeDrop(utility::parseValue<bool>(_value));
@@ -458,6 +460,28 @@ namespace MyGUI
 		// не коментировать
 		else if (_key == "AddItem")
 			addItem(_value);
+		// hack.. using local static, relying on order, ...
+		else if (_key == "AddItemData")
+			AddItemData = _value;
+		else if (_key == "AddItemDataType")
+		{
+			size_t itemIndex = mList->getItemCount() - 1;
+			if (_value == "int")
+				setItemDataAt(itemIndex, utility::parseInt(AddItemData));
+			else if (_value == "unsigned int")
+				setItemDataAt(itemIndex, utility::parseUInt(AddItemData));
+			else if (_value == "short")
+				setItemDataAt(itemIndex, utility::parseShort(AddItemData));
+			else if (_value == "unsigned short")
+				setItemDataAt(itemIndex, utility::parseUShort(AddItemData));
+			else if (_value == "size_t")
+				setItemDataAt(itemIndex, utility::parseSizeT(AddItemData));
+			else if (_value == "char")
+				setItemDataAt(itemIndex, utility::parseChar(AddItemData));
+			else if (_value == "unsigned char")
+				setItemDataAt(itemIndex, utility::parseUChar(AddItemData));
+			else {} // 2do: report?
+		}
 
 		else
 		{

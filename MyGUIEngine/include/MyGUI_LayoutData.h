@@ -33,6 +33,7 @@ namespace MyGUI
 		std::vector<WidgetInfo> childWidgetsInfo;
 		// not map because there might be several properties with same name (for example List items)
 		VectorStringPairs properties;
+		std::map<size_t, MyGUI::PairString> propertyDatas;
 		MapString userStrings;
 		std::vector<ControllerInfo> controllers;
 		std::string type;

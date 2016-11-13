@@ -77,6 +77,14 @@ namespace MyGUI
 			else if (node->getName() == "Property")
 			{
 				widgetInfo.properties.push_back(PairString(node->findAttribute("key"), node->findAttribute("value")));
+
+				std::string data, dataType;
+				if (node->findAttribute("data", data) && node->findAttribute("dataType", dataType))
+				{
+					size_t index = widgetInfo.properties.size() - 1;
+					widgetInfo.propertyDatas[index] = PairString(data, dataType);
+				}
+				else {}
 			}
 			else if (node->getName() == "UserString")
 			{
@@ -143,9 +151,18 @@ namespace MyGUI
 		else
 			wid = _parent->createWidgetT(style, _widgetInfo.type, _widgetInfo.skin, coord, _widgetInfo.align, widgetLayer, widgetName);
 
-		for (VectorStringPairs::const_iterator iter = _widgetInfo.properties.begin(); iter != _widgetInfo.properties.end(); ++iter)
+		size_t propIdx = 0;
+		for (VectorStringPairs::const_iterator iter = _widgetInfo.properties.begin(); iter != _widgetInfo.properties.end(); ++iter, ++propIdx)
 		{
 			wid->setProperty(iter->first, iter->second);
+
+			std::map<size_t, MyGUI::PairString>::const_iterator findDataIt = _widgetInfo.propertyDatas.find(propIdx);
+			if (findDataIt != _widgetInfo.propertyDatas.end())
+			{
+				wid->setProperty(iter->first + "Data", findDataIt->second.first);
+				wid->setProperty(iter->first + "DataType", findDataIt->second.second);
+			}
+			else {}
 		}
 
 		for (MapString::const_iterator iter = _widgetInfo.userStrings.begin(); iter != _widgetInfo.userStrings.end(); ++iter)

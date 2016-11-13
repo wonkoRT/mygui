@@ -117,9 +117,18 @@ namespace MyGUI
 
 		if (root != nullptr)
 		{
-			for (VectorStringPairs::const_iterator iter = root->properties.begin(); iter != root->properties.end(); ++iter)
+			size_t propIdx = 0;
+			for (VectorStringPairs::const_iterator iter = root->properties.begin(); iter != root->properties.end(); ++iter, ++propIdx)
 			{
 				setProperty(iter->first, iter->second);
+
+				std::map<size_t, MyGUI::PairString>::const_iterator findDataIt = root->propertyDatas.find(propIdx);
+				if (findDataIt != root->propertyDatas.end())
+				{
+					setProperty(iter->first + "Data", findDataIt->second.first);
+					setProperty(iter->first + "DataType", findDataIt->second.second);
+				}
+				else {}
 			}
 		}
 	}
