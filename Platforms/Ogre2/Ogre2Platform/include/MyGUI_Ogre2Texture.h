@@ -23,7 +23,11 @@
 #include <OgreHlmsDatablock.h>
 #include <OgreHlmsSamplerblock.h>
 #include <OgreHlmsManager.h>
+#ifndef MYGUI_OGRE_21
 #include <Hlms/Unlit/OgreHlmsUnlitDatablock.h>
+#else
+#include <Hlms/Unlit/include/OgreHlmsUnlitDatablock.h>
+#endif
 
 #include "MyGUI_LastHeader.h"
 
@@ -58,6 +62,25 @@ namespace MyGUI
 			MYGUI_PLATFORM_ASSERT(hlms != 0, "Ogre::HLMS_UNLIT model was not properly setup.");
 
 			return static_cast<Ogre::HlmsUnlitDatablock*>(hlms->createDatablock(Ogre::IdString( id ), id, mMacroBlock, mBlendBlock, mParamsVec));
+		}
+		Ogre::HlmsUnlitDatablock* createOrGetUnlitDataBlock(Ogre::String id) const
+		{
+			Ogre::Hlms* hlms = Ogre::Root::getSingleton().getHlmsManager()->getHlms(Ogre::HLMS_UNLIT);
+
+			MYGUI_PLATFORM_ASSERT(hlms != 0, "Ogre::HLMS_UNLIT model was not properly setup.");
+
+			Ogre::HlmsDatablock* datablock = hlms->getDatablock(Ogre::IdString(id));
+			if (!datablock)
+				datablock = hlms->createDatablock(Ogre::IdString(id), id, mMacroBlock, mBlendBlock, mParamsVec);
+			return static_cast<Ogre::HlmsUnlitDatablock*>(datablock);
+		}
+		void destroyUnlitDataBlock(Ogre::String id) const
+		{
+			Ogre::Hlms* hlms = Ogre::Root::getSingleton().getHlmsManager()->getHlms(Ogre::HLMS_UNLIT);
+
+			MYGUI_PLATFORM_ASSERT(hlms != 0, "Ogre::HLMS_UNLIT model was not properly setup.");
+
+			hlms->destroyDatablock(Ogre::IdString(id));
 		}
 
 	private:

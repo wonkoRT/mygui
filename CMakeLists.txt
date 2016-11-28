@@ -121,7 +121,8 @@ set(MYGUI_RENDERSYSTEM 3 CACHE STRING
   5 - Direct3D 9
   6 - Direct3D 11
   7 - OpenGL 3.x
-  8 - Ogre 2.x"
+  8 - Ogre 2.x
+  9 - Ogre 2.1 pso"
 )
 
 if(MYGUI_RENDERSYSTEM EQUAL 4 OR MYGUI_RENDERSYSTEM EQUAL 7)

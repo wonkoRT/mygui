@@ -146,8 +146,14 @@ namespace MyGUI
 		virtual bool checkTexture(ITexture* _texture);
 #endif
 
+#ifndef MYGUI_OGRE_21
 	private:
 		virtual void windowResized(Ogre::RenderWindow* _window);
+#else
+	public:
+		virtual void windowResized(int w, int h);
+	private:
+#endif
 
 		// восстанавливаем буферы
 		virtual void eventOccurred(const Ogre::String& eventName, const Ogre::NameValuePairList* parameters);

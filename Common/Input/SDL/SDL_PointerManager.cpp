@@ -10,12 +10,21 @@
 
 #include "ResourceSDLPointer.cpp"
 
+#ifdef MYGUI_OGRE_21
+#include "OgreWindowEventUtilities.h"
+#endif
+
 namespace input
 {
 
 	PointerManager::PointerManager() :
 		mManagerPointer(true),
 		mCursor(nullptr)
+#ifdef MYGUI_OGRE_21
+		, mSdlWindow(0)
+		, mMouseInWindow(true)
+		, mWindowHasFocus(true)
+#endif
 	{
 	}
 
@@ -24,8 +33,10 @@ namespace input
 		SDL_FreeCursor(mCursor);
 	}
 
-	void PointerManager::createPointerManager()
+	void PointerManager::createPointerManager(SDL_Window* sdlWindow)
 	{
+		mSdlWindow = sdlWindow;
+
 		MyGUI::PointerManager& manager = MyGUI::PointerManager::getInstance();
 		manager.setVisible(false);
 		manager.eventChangeMousePointer += MyGUI::newDelegate(this, &PointerManager::notifyChangeMousePointer);
@@ -95,5 +106,45 @@ namespace input
 	{
 		MyGUI::ResourceManager::getInstance().load("PointersSDL.xml");
 	}
+
+#ifdef MYGUI_OGRE_21
+	void PointerManager::handleSdlPointerEvents(const SDL_Event& evt)
+	{
+		switch (evt.type)
+		{
+		case SDL_WINDOWEVENT:
+			handleWindowEvent(evt);
+			break;
+		}
+	}
+	void PointerManager::handleWindowEvent(const SDL_Event& evt)
+	{
+		switch (evt.window.event)
+		{
+		case SDL_WINDOWEVENT_ENTER:
+			mMouseInWindow = true;
+			updateMouseSettings();
+			break;
+		case SDL_WINDOWEVENT_LEAVE:
+			mMouseInWindow = false;
+			updateMouseSettings();
+			break;
+		case SDL_WINDOWEVENT_FOCUS_GAINED:
+			mWindowHasFocus = true;
+			updateMouseSettings();
+			break;
+		case SDL_WINDOWEVENT_FOCUS_LOST:
+			mWindowHasFocus = false;
+			updateMouseSettings();
+			break;
+		}
+	}
+	void PointerManager::updateMouseSettings()
+	{
+		// 2do
+		bool mGrabPointer = false && mMouseInWindow && mWindowHasFocus;
+		SDL_SetWindowGrab(mSdlWindow, mGrabPointer ? SDL_TRUE : SDL_FALSE);
+	}
+#endif
 
 } // namespace input

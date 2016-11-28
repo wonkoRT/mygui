@@ -12,8 +12,13 @@
 
 #include <MyGUI.h>
 
+#ifndef MYGUI_OGRE_21
 #include "InputManager.h"
 #include "PointerManager.h"
+#else
+#include "SDL_InputManager.h"
+#include "SDL_PointerManager.h"
+#endif
 #include "MyGUI_LastHeader.h"
 
 namespace MyGUI
@@ -47,7 +52,9 @@ namespace base
 		void setResourceFilename(const std::string& _flename);
 		void addResourceLocation(const std::string& _name, bool _recursive = false);
 
+#ifndef MYGUI_OGRE_21
 		size_t getWindowHandle();
+#endif
 
 		MyGUI::MapString getStatistic();
 
@@ -77,9 +84,17 @@ namespace base
 		virtual MyGUI::IntCoord getWindowCoord();
 
 	private:
+#ifdef MYGUI_OGRE_21
+		void frameEvent(float _time);
+#endif
+
 		virtual bool frameStarted(const Ogre::FrameEvent& _evt);
 		virtual bool frameEnded(const Ogre::FrameEvent& _evt);
+#ifndef MYGUI_OGRE_21
 		virtual void windowResized(Ogre::RenderWindow* _rw);
+#else
+		void windowResized(int w, int h);
+#endif
 		virtual void windowClosed(Ogre::RenderWindow* _rw);
 
 		void addResourceLocation(const std::string& _name, const std::string& _group, const std::string& _type, bool _recursive);
@@ -101,6 +116,19 @@ namespace base
 		std::string mResourceXMLName;
 		std::string mResourceFileName;
 		std::string mRootMedia;
+
+
+#ifdef MYGUI_OGRE_21
+	private:
+		SDL_Window* mSdlWindow;
+		int w_, h_;
+	private:
+		int getWidth() const { return w_; }
+		int getHeight() const { return h_; }
+
+		void handleSdlEvents(const SDL_Event& evt);
+		void handleWindowEvent(const SDL_Event& evt);
+#endif
 	};
 
 } // namespace base

@@ -43,7 +43,8 @@ function(mygui_create_vcproj_userfile TARGETNAME)
 		#FIXME
 		if (${CMAKE_GENERATOR} STREQUAL "Visual Studio 10" OR ${CMAKE_GENERATOR} STREQUAL "Visual Studio 10 Win64" OR
 			${CMAKE_GENERATOR} STREQUAL "Visual Studio 11" OR ${CMAKE_GENERATOR} STREQUAL "Visual Studio 11 Win64" OR
-			${CMAKE_GENERATOR} STREQUAL "Visual Studio 12" OR ${CMAKE_GENERATOR} STREQUAL "Visual Studio 12 Win64"
+			${CMAKE_GENERATOR} STREQUAL "Visual Studio 12" OR ${CMAKE_GENERATOR} STREQUAL "Visual Studio 12 Win64" OR
+			${CMAKE_GENERATOR} STREQUAL "Visual Studio 14 2015"
 			)
 			configure_file(
 				${MYGUI_TEMPLATES_DIR}/VisualStudio2010UserFile.vcxproj.user.in
@@ -171,6 +172,15 @@ function(mygui_app PROJECTNAME SOLUTIONFOLDER)
 			${OGRE_INCLUDE_DIR}
 		)
 		link_directories(${OGRE_LIB_DIR})
+	elseif(MYGUI_RENDERSYSTEM EQUAL 9)
+		include_directories(../../Common/Base/Ogre2)
+		add_definitions("-DMYGUI_OGRE2_PLATFORM -DMYGUI_OGRE_21")
+		include_directories(
+			${MYGUI_SOURCE_DIR}/Platforms/Ogre2/Ogre2Platform/include
+			${OGRE_INCLUDE_DIR}
+			${OGRE_INCLUDE_DIR_ADDITIONALS}
+		)
+		link_directories(${OGRE_LIB_DIR})
 	endif()
 
 	if(MYGUI_SAMPLES_INPUT EQUAL 1)
@@ -231,7 +241,7 @@ function(mygui_app PROJECTNAME SOLUTIONFOLDER)
 		target_link_libraries(${PROJECTNAME} MyGUI.OpenGL3Platform)
 
 		target_link_libraries(${PROJECTNAME} gdiplus)
-	elseif(MYGUI_RENDERSYSTEM EQUAL 8)
+	elseif(MYGUI_RENDERSYSTEM EQUAL 8 OR 9)
 		add_dependencies(${PROJECTNAME} MyGUI.Ogre2Platform)
 		target_link_libraries(${PROJECTNAME} MyGUI.Ogre2Platform)
 	endif()
@@ -327,6 +337,15 @@ function(mygui_dll PROJECTNAME SOLUTIONFOLDER)
 			${OGRE_INCLUDE_DIR}
 		)
 		link_directories(${OGRE_LIB_DIR})
+	elseif(MYGUI_RENDERSYSTEM EQUAL 9)
+		include_directories(../../Common/Base/Ogre2)
+		add_definitions("-DMYGUI_OGRE2_PLATFORM -DMYGUI_OGRE_21")
+		include_directories(
+			${MYGUI_SOURCE_DIR}/Platforms/Ogre2/Ogre2Platform/include
+			${OGRE_INCLUDE_DIR}
+			${OGRE_INCLUDE_DIR_ADDITIONALS}
+		)
+		link_directories(${OGRE_LIB_DIR})
 	endif()
 
 
@@ -364,7 +383,7 @@ function(mygui_dll PROJECTNAME SOLUTIONFOLDER)
 		target_link_libraries(${PROJECTNAME} MyGUI.OpenGL3Platform)
 
 		target_link_libraries(${PROJECTNAME} gdiplus)
-	elseif(MYGUI_RENDERSYSTEM EQUAL 8)
+	elseif(MYGUI_RENDERSYSTEM EQUAL 8 OR 9)
 		add_dependencies(${PROJECTNAME} MyGUI.Ogre2Platform)
 		target_link_libraries(${PROJECTNAME} MyGUI.Ogre2Platform)
 	endif()

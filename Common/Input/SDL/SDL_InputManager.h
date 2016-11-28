@@ -18,7 +18,7 @@ namespace input
 		InputManager();
 		virtual ~InputManager();
 
-		void createInput();
+		void createInput(SDL_Window* sdlWindow);
 		void destroyInput();
 		void captureInput();
 		void setInputViewSize(int _width, int _height);
@@ -63,6 +63,13 @@ namespace input
 		int mHeight;
 		std::map<int, MyGUI::KeyCode> mSDLVKeyMap;
 		std::map<int, MyGUI::MouseButton> mSDLMouseMap;
+
+#ifdef MYGUI_OGRE_21
+	private:
+		SDL_Window* mSdlWindow;
+	protected:
+		void handleSdlInputEvents(const SDL_Event& evt);
+#endif
 	};
 
 } // namespace input

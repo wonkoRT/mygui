@@ -7,6 +7,10 @@
 #include "Precompiled.h"
 #include "SDL_InputManager.h"
 
+#ifdef MYGUI_OGRE_21
+#include "OgreWindowEventUtilities.h"
+#endif
+
 namespace input
 {
 
@@ -17,6 +21,9 @@ namespace input
 		mMouseMove(false),
 		mWidth(0),
 		mHeight(0)
+#ifdef MYGUI_OGRE_21
+		, mSdlWindow(0)
+#endif
 	{
 		// build the virtual key map and mouse button between SDL and MyGUI
 		buildVKeyMap();
@@ -175,8 +182,10 @@ namespace input
 		mSDLMouseMap.insert(std::pair<int, MyGUI::MouseButton>(SDL_BUTTON_MIDDLE, MyGUI::MouseButton::Middle));
 	}
 
-	void InputManager::createInput()
+	void InputManager::createInput(SDL_Window* sdlWindow)
 	{
+		mSdlWindow = sdlWindow;
+
 		MyGUI::Gui::getInstance().eventFrameStart += MyGUI::newDelegate(this, &InputManager::frameEvent);
 
 		// Removes default MyGUI system clipboard implementation, which is supported on Windows only
@@ -201,6 +210,56 @@ namespace input
 	{
 		computeMouseMove();
 	}
+#ifdef MYGUI_OGRE_21
+	void InputManager::handleSdlInputEvents(const SDL_Event& evt)
+	{
+		// hack
+		static SDL_Keycode lastSym;
+
+		switch (evt.type)
+		{
+		case SDL_MOUSEMOTION:
+		{
+			mouseMoved(evt.motion);
+		}
+		break;
+		case SDL_MOUSEWHEEL:
+		{
+			mouseMoved(evt.motion);
+		}
+		break;
+		case SDL_MOUSEBUTTONDOWN:
+		{
+			mousePressed(evt.button);// , evt.button.button);
+		}
+		break;
+		case SDL_MOUSEBUTTONUP:
+		{
+			mouseReleased(evt.button);// , evt.button.button);
+		}
+		break;
+		case SDL_KEYDOWN:
+		{
+			lastSym = evt.key.keysym.sym;
+			keyPressed(evt.key.keysym.sym, nullptr); // &evt.text);
+		}
+		break;
+		case SDL_KEYUP:
+		{
+			keyReleased(evt.key);
+		}
+		break;
+		case SDL_TEXTINPUT:
+		{
+			keyPressed(lastSym, &evt.text);
+			bool bh = true;
+		}
+		break;
+		case SDL_WINDOWEVENT:
+			break;
+		}
+	}
+#endif
 
 	void InputManager::computeMouseMove()
 	{

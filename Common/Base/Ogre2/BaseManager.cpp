@@ -20,8 +20,15 @@
 #include <Compositor/Pass/PassScene/OgreCompositorPassSceneDef.h>
 #include <Compositor/Pass/PassClear/OgreCompositorPassClearDef.h>
 #include <Compositor/OgreCompositorWorkspaceDef.h>
+#ifndef MYGUI_OGRE_21
 #include <Hlms/Unlit/OgreHlmsUnlit.h>
 #include <Hlms/Pbs/OgreHlmsPbs.h>
+#else
+#include <Hlms/Unlit/include/OgreHlmsUnlit.h>
+#include <Hlms/Pbs/include/OgreHlmsPbs.h>
+
+#include <SDL_syswm.h>
+#endif
 #include <OgreHlmsManager.h>
 #include <OgreFrameStats.h>
 
@@ -68,6 +75,11 @@ namespace base
 		mPluginCfgName("plugins.cfg"),
 		mResourceXMLName("resources.xml"),
 		mResourceFileName("MyGUI_Core.xml")
+#ifdef MYGUI_OGRE_21
+		, mSdlWindow(0),
+		w_(0),
+		h_(0)
+#endif
 	{
 		#if MYGUI_PLATFORM == MYGUI_PLATFORM_APPLE
 			mResourcePath = macBundlePath() + "/Contents/Resources/";
@@ -99,6 +111,7 @@ namespace base
 			if (!mRoot->showConfigDialog()) return false;
 		}
 
+#ifndef MYGUI_OGRE_21
 		mWindow = mRoot->initialise(true);
 
 
@@ -116,6 +129,117 @@ namespace base
 		if (hIconBig)
 			::SendMessageA((HWND)handle, WM_SETICON, 1, (LPARAM)hIconBig);
 	#endif
+#else
+		mRoot->initialise(false);
+
+		std::string windowTitle = "asdfasdf";
+
+		Ogre::ConfigOptionMap& cfgOpts = mRoot->getRenderSystem()->getConfigOptions();
+
+		int width = 1280;
+		int height = 720;
+
+#if OGRE_PLATFORM == OGRE_PLATFORM_APPLE_IOS
+		{
+			Ogre::Vector2 screenRes = iOSUtils::getScreenResolutionInPoints();
+			width = static_cast<int>(screenRes.x);
+			height = static_cast<int>(screenRes.y);
+		}
+#endif
+
+		Ogre::ConfigOptionMap::iterator opt = cfgOpts.find("Video Mode");
+		if (opt != cfgOpts.end())
+		{
+			//Ignore leading space
+			const Ogre::String::size_type start = opt->second.currentValue.find_first_of("012356789");
+			//Get the width and height
+			Ogre::String::size_type widthEnd = opt->second.currentValue.find(' ', start);
+			// we know that the height starts 3 characters after the width and goes until the next space
+			Ogre::String::size_type heightEnd = opt->second.currentValue.find(' ', widthEnd + 3);
+			// Now we can parse out the values
+			w_ = Ogre::StringConverter::parseInt(opt->second.currentValue.substr(0, widthEnd));
+			h_ = Ogre::StringConverter::parseInt(opt->second.currentValue.substr(
+				widthEnd + 3, heightEnd));
+		}
+
+		Ogre::NameValuePairList params;
+		bool fullscreen = Ogre::StringConverter::parseBool(cfgOpts["Full Screen"].currentValue);
+//#if OGRE_USE_SDL2
+		int screen = 0;
+		int posX = SDL_WINDOWPOS_CENTERED_DISPLAY(screen);
+		int posY = SDL_WINDOWPOS_CENTERED_DISPLAY(screen);
+
+		if (fullscreen)
+		{
+			posX = SDL_WINDOWPOS_UNDEFINED_DISPLAY(screen);
+			posY = SDL_WINDOWPOS_UNDEFINED_DISPLAY(screen);
+		}
+
+
+		mSdlWindow = SDL_CreateWindow(
+			windowTitle.c_str(),    // window title
+			posX,               // initial x position
+			posY,               // initial y position
+			w_,              // width, in pixels
+			h_,             // height, in pixels
+			SDL_WINDOW_SHOWN
+			| (fullscreen ? SDL_WINDOW_FULLSCREEN : 0) | SDL_WINDOW_RESIZABLE);
+
+		//Get the native whnd
+		SDL_SysWMinfo wmInfo;
+		SDL_VERSION(&wmInfo.version);
+
+		if (SDL_GetWindowWMInfo(mSdlWindow, &wmInfo) == SDL_FALSE)
+		{
+			OGRE_EXCEPT(Ogre::Exception::ERR_INTERNAL_ERROR,
+				"Couldn't get WM Info! (SDL2)",
+				"GraphicsSystem::initialize");
+		}
+
+		Ogre::String winHandle;
+		switch (wmInfo.subsystem)
+		{
+#ifdef WIN32
+		case SDL_SYSWM_WINDOWS:
+			// Windows code
+			winHandle = Ogre::StringConverter::toString((uintptr_t)wmInfo.info.win.window);
+			break;
+#elif __MACOSX__
+		case SDL_SYSWM_COCOA:
+			//required to make OGRE play nice with our window
+			params.insert(std::make_pair("macAPI", "cocoa"));
+			params.insert(std::make_pair("macAPICocoaUseNSView", "true"));
+
+			winHandle = Ogre::StringConverter::toString(WindowContentViewHandle(wmInfo));
+			break;
+#else
+		case SDL_SYSWM_X11:
+			winHandle = Ogre::StringConverter::toString((uintptr_t)wmInfo.info.x11.window);
+			break;
+#endif
+		default:
+			OGRE_EXCEPT(Ogre::Exception::ERR_NOT_IMPLEMENTED,
+				"Unexpected WM! (SDL2)",
+				"GraphicsSystem::initialize");
+			break;
+		}
+
+#if OGRE_PLATFORM == OGRE_PLATFORM_WIN32
+		params.insert(std::make_pair("externalWindowHandle", winHandle));
+#else
+		params.insert(std::make_pair("parentWindowHandle", winHandle));
+#endif
+//#endif
+
+		params.insert(std::make_pair("title", windowTitle));
+		params.insert(std::make_pair("gamma", "true"));
+		params.insert(std::make_pair("FSAA", cfgOpts["FSAA"].currentValue));
+		params.insert(std::make_pair("vsync", cfgOpts["VSync"].currentValue));
+
+		mWindow = Ogre::Root::getSingleton().createRenderWindow(windowTitle, w_, h_,
+			fullscreen, &params);
+#endif
+
 
 		const size_t numThreads = std::max<int>(1, Ogre::PlatformInformation::getNumLogicalCores());
 		Ogre::InstancingThreadedCullingMethod threadedCullingMethod = Ogre::INSTANCING_CULLING_SINGLETHREAD;
@@ -150,13 +274,25 @@ namespace base
 
 		createGui();
 
+#ifndef MYGUI_OGRE_21
 		createInput(handle);
 
 		createPointerManager(handle);
+#else
+		createInput(mSdlWindow);
+
+		createPointerManager(mSdlWindow);
+
+		MyGUI::Gui::getInstance().eventFrameStart += MyGUI::newDelegate(this, &BaseManager::frameEvent);
+#endif
 
 		createScene();
 
+#ifndef MYGUI_OGRE_21
 		windowResized(mWindow);
+#else
+		windowResized(w_, h_);
+#endif
 
 		return true;
 	}
@@ -261,7 +397,11 @@ namespace base
 			}
 		}
 		Ogre::CompositorWorkspaceDef *workDef = pCompositorManager->addWorkspaceDefinition(workspaceName);
+#ifndef MYGUI_OGRE_21
 		workDef->connectOutput(nodeDef->getName(), 0);
+#else
+		workDef->connectExternal(0, nodeDef->getName(), 0);
+#endif
 
 		pCompositorManager->addWorkspace(mSceneManager, mWindow, mCamera, workspaceNameHash, true);
 
@@ -288,6 +428,7 @@ namespace base
 
 	void BaseManager::setWindowMaximized(bool _value)
 	{
+#ifndef MYGUI_OGRE_21
 #if MYGUI_PLATFORM == MYGUI_PLATFORM_WIN32
 		if (_value)
 		{
@@ -295,16 +436,23 @@ namespace base
 			::ShowWindow((HWND)handle, SW_SHOWMAXIMIZED);
 		}
 #endif
+#else
+		SDL_MaximizeWindow(mSdlWindow);
+#endif
 	}
 
 	bool BaseManager::getWindowMaximized()
 	{
+#ifndef MYGUI_OGRE_21
 		bool result = false;
 #if MYGUI_PLATFORM == MYGUI_PLATFORM_WIN32
 		size_t handle = getWindowHandle();
 		result = ::IsZoomed((HWND)handle) != 0;
 #endif
 		return result;
+#else
+		return (SDL_GetWindowFlags(mSdlWindow) & SDL_WINDOW_MAXIMIZED) != 0;
+#endif
 	}
 
 	void BaseManager::setWindowCoord(const MyGUI::IntCoord& _value)
@@ -331,8 +479,13 @@ namespace base
 		if (coord.bottom() > GetSystemMetrics(SM_CYSCREEN))
 			coord.top = GetSystemMetrics(SM_CYSCREEN) - coord.height;
 
+#ifndef MYGUI_OGRE_21
 		size_t handle = getWindowHandle();
 		::MoveWindow((HWND)handle, coord.left, coord.top, coord.width, coord.height, true);
+#else
+		SDL_SetWindowPosition(mSdlWindow, coord.left, coord.top);
+		SDL_SetWindowSize(mSdlWindow, coord.width, coord.height);
+#endif
 #endif
 	}
 
@@ -340,6 +493,7 @@ namespace base
 	{
 		MyGUI::IntCoord result;
 #if MYGUI_PLATFORM == MYGUI_PLATFORM_WIN32
+#ifndef MYGUI_OGRE_21
 		size_t handle = getWindowHandle();
 		::RECT rect;
 		::GetWindowRect((HWND)handle, &rect);
@@ -347,6 +501,15 @@ namespace base
 		result.top = rect.top;
 		result.width = rect.right - rect.left;
 		result.height = rect.bottom - rect.top;
+#else
+		int x, y, w, h;
+		SDL_GetWindowPosition(mSdlWindow, &x, &y);
+		SDL_GetWindowSize(mSdlWindow, &w, &h);
+		result.left = x;
+		result.top = y;
+		result.width = w;
+		result.height = h;
+#endif
 #endif
 		return result;
 	}
@@ -401,6 +564,80 @@ namespace base
 		Ogre::Root::getSingleton().getHlmsManager()->registerHlms(hlmsUnlit);
 	}
 
+#ifdef MYGUI_OGRE_21
+	void BaseManager::frameEvent(float _time)
+	{
+		Ogre::WindowEventUtilities::messagePump();
+
+		SDL_Event evt = { 0 };
+		while (SDL_PollEvent(&evt))
+		{
+			handleSdlEvents(evt);
+		}
+	}
+	void BaseManager::handleSdlEvents(const SDL_Event& evt)
+	{
+		// hack
+		static SDL_Keycode lastSym;
+
+		switch (evt.type)
+		{
+		case SDL_MOUSEMOTION:
+		case SDL_MOUSEWHEEL:
+		case SDL_MOUSEBUTTONDOWN:
+		case SDL_MOUSEBUTTONUP:
+		case SDL_KEYDOWN:
+		case SDL_KEYUP:
+		case SDL_TEXTINPUT:
+		case SDL_JOYAXISMOTION:
+		case SDL_JOYBUTTONDOWN:
+		case SDL_JOYBUTTONUP:
+		case SDL_JOYDEVICEADDED:
+		case SDL_JOYDEVICEREMOVED:
+			handleSdlInputEvents(evt);
+			break;
+		case SDL_WINDOWEVENT:
+			handleSdlInputEvents(evt);
+			handleSdlPointerEvents(evt);
+			handleWindowEvent(evt);
+			break;
+		}
+	}
+	void BaseManager::handleWindowEvent(const SDL_Event& evt)
+	{
+		switch (evt.window.event)
+		{
+		case SDL_WINDOWEVENT_SIZE_CHANGED:
+			int w, h;
+			SDL_GetWindowSize(mSdlWindow, &w, &h);
+#if OGRE_PLATFORM == OGRE_PLATFORM_LINUX
+			mWindow->resize(w, h);
+#else
+			windowResized(w, h);
+			mWindow->windowMovedOrResized();
+#endif
+			break;
+		case SDL_WINDOWEVENT_RESIZED:
+#if OGRE_PLATFORM == OGRE_PLATFORM_LINUX
+			mWindow->resize(evt.window.data1, evt.window.data2);
+#else
+			windowResized(evt.window.data1, evt.window.data2);
+			mWindow->windowMovedOrResized();
+#endif
+			break;
+		case SDL_WINDOWEVENT_CLOSE:
+			windowClosed(mWindow);
+			break;
+		case SDL_WINDOWEVENT_SHOWN:
+			mWindow->setVisible(true);
+			break;
+		case SDL_WINDOWEVENT_HIDDEN:
+			mWindow->setVisible(false);
+			break;
+		}
+	}
+#endif
+
 	bool BaseManager::frameStarted(const Ogre::FrameEvent& evt)
 	{
 		if (mExit)
@@ -419,6 +656,7 @@ namespace base
 		return true;
 	}
 
+#ifndef MYGUI_OGRE_21
 	void BaseManager::windowResized(Ogre::RenderWindow* _rw)
 	{
 		int width = (int)_rw->getWidth();
@@ -432,6 +670,17 @@ namespace base
 			setInputViewSize(width, height);
 		}
 	}
+#else
+	void BaseManager::windowResized(int w, int h)
+	{
+		mPlatform->getRenderManagerPtr()->windowResized(w, h);
+		if (mCamera)
+		{
+			mCamera->setAspectRatio((float)w / (float)h);
+			setInputViewSize(w, h);
+		}
+	}
+#endif
 
 	void BaseManager::windowClosed(Ogre::RenderWindow* _rw)
 	{
@@ -439,17 +688,24 @@ namespace base
 		destroyInput();
 	}
 
+#ifndef MYGUI_OGRE_21
 	size_t BaseManager::getWindowHandle()
 	{
 		size_t handle = 0;
 		mWindow->getCustomAttribute("WINDOW", &handle);
 		return handle;
 	}
+#endif
 
 	void BaseManager::setWindowCaption(const std::wstring& _text)
 	{
 	#if MYGUI_PLATFORM == MYGUI_PLATFORM_WIN32
+#ifndef MYGUI_OGRE_21
 		::SetWindowTextW((HWND)getWindowHandle(), _text.c_str());
+#else
+		// 2do
+		SDL_SetWindowTitle(mSdlWindow, MyGUI::UString(_text).asUTF8_c_str());
+#endif
 	#elif MYGUI_PLATFORM == MYGUI_PLATFORM_LINUX
 		Display* xDisplay = nullptr;
 		unsigned long windowHandle = 0;

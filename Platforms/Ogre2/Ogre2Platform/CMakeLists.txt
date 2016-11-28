@@ -1,11 +1,27 @@
 set (PROJECTNAME MyGUI.Ogre2Platform)
 
-include_directories(
- include
- ${MYGUI_SOURCE_DIR}/MyGUIEngine/include
- ${OGRE_INCLUDE_DIR}
- ${OGRE_SOURCE_DIR}
-)
+if(MYGUI_RENDERSYSTEM EQUAL 8)
+	include_directories(
+	 include
+	 ${MYGUI_SOURCE_DIR}/MyGUIEngine/include
+	 ${OGRE_INCLUDE_DIR}
+	 ${OGRE_SOURCE_DIR}
+	)
+elseif(MYGUI_RENDERSYSTEM EQUAL 9)
+	include_directories(
+	 include
+	 ${MYGUI_SOURCE_DIR}/MyGUIEngine/include
+	 ${OGRE_INCLUDE_DIR}
+	 ${OGRE_INCLUDE_DIR_ADDITIONALS}
+	 ${OGRE_SOURCE_DIR}
+	)
+	add_definitions("-DMYGUI_OGRE_21")
+else ()
+	#2do
+	message("unknown render system in MyGUI.Ogre2Platform CMakeLists.txt")
+endif()
+
+
 
 include(${PROJECTNAME}.list)
 

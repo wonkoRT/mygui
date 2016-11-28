@@ -165,7 +165,12 @@ namespace MyGUI
 		if (mWindow != nullptr)
 		{
 			Ogre::WindowEventUtilities::addWindowEventListener(mWindow, this);
+#ifndef MYGUI_OGRE_21
 			windowResized(mWindow);
+#else
+			//2do
+			windowResized(_window->getWidth(), _window->getHeight());
+#endif
 		}
 	}
 
@@ -245,6 +250,7 @@ namespace MyGUI
 		delete _buffer;
 	}
 
+#ifndef MYGUI_OGRE_21
 	// для оповещений об изменении окна рендера
 	void Ogre2RenderManager::windowResized(Ogre::RenderWindow* _window)
 	{
@@ -258,6 +264,19 @@ namespace MyGUI
 
 		onResizeView(mViewSize);
 	}
+#else
+	void Ogre2RenderManager::windowResized(int w, int h)
+	{
+		mViewSize.set(w, h);
+
+		// обновить всех
+		mUpdate = true;
+
+		updateRenderInfo();
+
+		onResizeView(mViewSize);
+	}
+#endif
 
 	void Ogre2RenderManager::updateRenderInfo()
 	{

@@ -52,6 +52,7 @@ IF(NOT SDL2_FOUND)
       HINTS
         ${PC_SDL2_INCLUDEDIR}
         ${PC_SDL2_INCLUDE_DIRS}
+		${OGRE_DEPS_SOURCE_DIR}/SDL2/include
       PATH_SUFFIXES SDL2
     )
 
@@ -60,6 +61,7 @@ IF(NOT SDL2_FOUND)
       HINTS
         ${PC_SDL2_LIBDIR}
         ${PC_SDL2_LIBRARY_DIRS}
+		${OGRE_DEPS_BUILD_DIR}/ogredeps/lib
       PATH_SUFFIXES x64 x86
     )
     

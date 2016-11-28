@@ -28,7 +28,9 @@ namespace MyGUI
 	{
 		mTmpData.data = nullptr;
 
-		mDataBlock = HLMS_BLOCKS.createUnlitDataBlock(_name);
+		// 2do
+		// mDataBlock = HLMS_BLOCKS.createUnlitDataBlock(_name);
+		mDataBlock = HLMS_BLOCKS.createOrGetUnlitDataBlock(_name);
 	}
 
 	Ogre2Texture::~Ogre2Texture()
@@ -76,6 +78,9 @@ namespace MyGUI
 			Ogre::TextureManager::getSingleton().remove(mTexture->getName());
 			mTexture.setNull();
 		}
+
+		// 2do
+		//HLMS_BLOCKS.destroyUnlitDataBlock(mName);
 	}
 
 	int Ogre2Texture::getWidth()

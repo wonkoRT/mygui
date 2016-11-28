@@ -19,7 +19,7 @@ namespace input
 		PointerManager();
 		virtual ~PointerManager();
 
-		void createPointerManager();
+		void createPointerManager(SDL_Window* sdlWindow);
 		void destroyPointerManager();
 
 		void setPointerVisible(bool _value);
@@ -38,6 +38,19 @@ namespace input
 		MapPointer mMapPointer;
 		bool mManagerPointer;
 		SDL_Cursor* mCursor;
+
+
+#ifdef MYGUI_OGRE_21
+	private:
+		SDL_Window* mSdlWindow;
+		bool        mMouseInWindow;
+		bool        mWindowHasFocus;
+	private:
+		void handleWindowEvent(const SDL_Event& evt);
+		void updateMouseSettings();
+	protected:
+		void handleSdlPointerEvents(const SDL_Event& evt);
+#endif
 	};
 
 } // namespace input

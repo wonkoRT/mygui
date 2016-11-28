@@ -73,7 +73,7 @@ if (MYGUI_TRY_TO_COPY_DLLS)
 		install_dll_file(${DEBUG_DLLS_DIR}/ ${RELEASE_DLLS_DIR}/ RenderSystem_GL)
 	endif ()
 
-	if (MYGUI_RENDERSYSTEM EQUAL 8)
+	if (MYGUI_RENDERSYSTEM EQUAL 8 OR 9)
 		if (EXISTS ${OGRE_LIB_DIR}/../bin/debug/OgreMain_d.dll)
 			set(DEBUG_DLLS_DIR ${OGRE_LIB_DIR}/../bin/debug)
 			set(RELEASE_DLLS_DIR ${OGRE_LIB_DIR}/../bin/release)

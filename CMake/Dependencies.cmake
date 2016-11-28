@@ -82,7 +82,11 @@ elseif(MYGUI_RENDERSYSTEM EQUAL 7)
 	endif()
 elseif(MYGUI_RENDERSYSTEM EQUAL 8)
     # Find OGRE
-    find_package(OGRE_Old)
+	find_package(OGRE_Old)
+    macro_log_feature(OGRE_FOUND "ogre" "Support for the Ogre render system" "" TRUE "" "")
+elseif(MYGUI_RENDERSYSTEM EQUAL 9)
+    # Find OGRE
+    find_package(OGRE_21)
     macro_log_feature(OGRE_FOUND "ogre" "Support for the Ogre render system" "" TRUE "" "")
 endif()
 
@@ -97,6 +101,8 @@ if (MYGUI_SAMPLES_INPUT EQUAL 1)
 elseif (MYGUI_SAMPLES_INPUT EQUAL 3)
 	find_package(OIS)
 	macro_log_feature(OIS_FOUND "OIS" "Input library needed for the samples" "http://sourceforge.net/projects/wgois" FALSE "" "")
+elseif (MYGUI_SAMPLES_INPUT EQUAL 4)
+	find_package(SDL2)
 endif()
 
 #######################################################################
